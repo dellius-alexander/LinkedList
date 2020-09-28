@@ -38,6 +38,17 @@ class Node<T extends Comparable<T>> implements Comparable<T>{
     /**
      * Assigns data to the current object and pointer
      * to the next node.
+     */
+    public Node()
+    {
+        this.next = null;
+        this.previous = null;
+        log.info("Line ["+ getLineNumber() + "] " +
+                "Constructor(T data)...\n");
+    }
+    /**
+     * Assigns data to the current object and pointer
+     * to the next node.
      * @param data  the data stored in the node.
      */
     public Node(T data)
@@ -46,7 +57,7 @@ class Node<T extends Comparable<T>> implements Comparable<T>{
         this.next = null;
         this.previous = null;
         log.info("Line ["+ getLineNumber() + "] " +
-                "Constructor(T data)...\n\tData: " + data.toString());
+                "Constructor(T data)...\n\tData: " + (data == null ? null : data.toString()));
     }
 
     /**
@@ -68,7 +79,7 @@ class Node<T extends Comparable<T>> implements Comparable<T>{
      */
     public T getData(){
         log.info("Line ["+ getLineNumber() + "] " +
-                "getData()...\n\tData: " + data.toString());
+                "getData()...\n\tData: " + (data == null ? null : data.toString()));
         return this.data;
     }
     /**
@@ -77,7 +88,7 @@ class Node<T extends Comparable<T>> implements Comparable<T>{
      */
     public void setData(T data){
         log.info("Line ["+ getLineNumber() + "] " +
-                "setData(T data)...\n\tData: " + data.toString());
+                "setData(T data)...\n\tData: " + (data == null ? null : data.toString()));
         this.data = data;
     }
     /**
@@ -117,7 +128,8 @@ class Node<T extends Comparable<T>> implements Comparable<T>{
     @Override
     public int compareTo(T data)
     {
-        log.info("Line ["+ getLineNumber() + "] compareTo(T data)...\n\tData: " + data.toString());
+        log.info("Line ["+ getLineNumber() + "] compareTo(T data)...\n\tData: " +
+                (data == null ? null : data.toString()));
         return data.compareTo(this.data);
     }
 }   // End of class Node<T>
@@ -408,6 +420,8 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
         {
             output += temp.getData() + " " ;
         }
+        log.info("Line ["+ getLineNumber() + "] toString()...\n\t" +
+                output);
         return output;
     }
 
@@ -415,7 +429,10 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
      * The size of the list
      * @return the number of nodes in the list
      */
-    public int getSize() {
+    public int getSize()
+    {
+        log.info("Line ["+ getLineNumber() + "] getSize()...\n\t" +
+                this.size);
         return this.size;
     }
     /**
@@ -424,31 +441,34 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
      * @return  the node that contains the data object
      * @throws NullPointerException
      */
-    public Node<T> findNode(T data)
+    public Node<T> findNode(T data) throws IllegalArgumentException, NullPointerException
     {
         // define a temporary node
-        Node<T> tmp = this.head;
+        Node<T> current = this.head;
         // compare the data of both nodes
-        int results = this.compareTo(tmp.getData(), data);
+        int results = this.compareTo(current, data);
+        log.info("Line ["+ getLineNumber() + "] findNode(T data)...\n\t" +
+                "Results: " + results);
         try{   // catch null pointer exception
             while(results != 0)  // check the results
             {
-                tmp = tmp.getNext();    // get the next node
-                // compare again for next iteration
-                results = this.compareTo(tmp.getData(), data);
-                if(tmp == this.tail)  // break the loop and return null if we reach the end of the loop
+                if(current.getNext() == null)  // break the loop and return null if we reach the end of the loop
                 {   // check if you reached the end of the list
-                    System.out.println(data + " does not exist in the list.\nEnd of the list has been reached\n");
-                    break;
+                    throw new IllegalArgumentException("\nThe end of the list is reached...Value not found");
+                }
+                current = current.getNext();    // get the next node
+                // compare again for next iteration
+                results = this.compareTo(current, data);
+                if (results == 0)
+                {
+                    log.info("Line ["+ getLineNumber() + "] Node Found: " + current);
                 }
             }
-        }catch (NullPointerException ne){ // catch exceptions
-            System.out.println("\nThe end of the list is reached...\nWe will add this data to end of the list.\n");
-            this.addLast(data);
-            this.size++;
-            return this.findNode(data);
+        }catch (IllegalArgumentException e){ // catch exceptions
+            log.warning(e.getMessage());
+            return null;
         }
-        return tmp;
+        return current;
     }
     /**
      * Compares the data to the data of the current object.
@@ -457,7 +477,7 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
      * @return a negative integer, zero, or a positive integer as this object
      *         is less than, equal to, or greater than the specified object.
      */
-    private int compareTo(T a, T b) {
+    private int compareTo(Node<T> a, T b) {
         return a.compareTo(b);
     }
 
@@ -467,9 +487,20 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
      * @param key   the value in the node we are searching for
      * @param value the value to insert after we find the node containing the key
      */
-    public void insertAfter(T key, T value){
-        Node<T> newNode = this.findNode(key);
-        newNode.setNext(new Node<T>(value));
+    public void insertAfter(T key, T value)
+    {
+        Node<T> nodeFound = this.findNode(key);
+        Node<T> current = this.head;
+        while(current != null)
+        {
+            current.setData(current.getData());
+            current.setNext(current);
+            if (current == nodeFound)
+            {
+                current.setNext(new Node<>(value));
+            }
+        }
+        this.head = current;
     }
 
     /**
@@ -513,14 +544,17 @@ class DLinkList<T extends Comparable<T>> { //note: T is a placeholder for a data
         myList.removeLast();
         myList.removeLast();
         myList.removeLast();
+        myList.addLast(2);
         System.out.println("My List: " + myList);
         System.out.println("List size: " + myList.getSize());
 
-        Node<Integer> foundNode = myList.findNode(78);
-        System.out.println("Found the node containing: " + foundNode.getData() + "\n");
-//        myList.insertAfter(78, 92);
-//        System.out.println("My List: " + myList);
-//        System.out.println("List size: " + myList.getSize());
+        Node<Integer> foundNode = myList.findNode(2);
+        System.out.println("\nFound the node containing: " + foundNode.getData() + "\n");
+        System.out.println("My List: " + myList);
+        System.out.println("List size: " + myList.getSize());
+        myList.insertAfter(50, 92);
+        System.out.println("My List: " + myList);
+        System.out.println("List size: " + myList.getSize());
 //
 //        SList<Integer> listCopy = new SList<Integer>(myList);
 //        System.out.println("\nCopied list: " + listCopy);
